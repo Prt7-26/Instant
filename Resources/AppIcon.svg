@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">Instant</title>
+  <desc id="description">A soft four-point star in ice-blue and sky-blue gradients, on a transparent background.</desc>
+  <defs>
+    <path id="star" d="M512 96C524 96 528 109 533 143C568 375 649 456 881 491C915 496 928 500 928 512C928 524 915 528 881 533C649 568 568 649 533 881C528 915 524 928 512 928C500 928 496 915 491 881C456 649 375 568 143 533C109 528 96 524 96 512C96 500 109 496 143 491C375 456 456 375 491 143C496 109 500 96 512 96Z"/>
+    <linearGradient id="blue" x1="210" y1="100" x2="785" y2="905" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E5FAFF"/>
+      <stop offset=".28" stop-color="#B7ECFF"/>
+      <stop offset=".55" stop-color="#85D2FC"/>
+      <stop offset=".8" stop-color="#68B5F0"/>
+      <stop offset="1" stop-color="#A1D6FA"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="365" cy="315" r="550" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity=".56"/>
+      <stop offset=".32" stop-color="white" stop-opacity=".22"/>
+      <stop offset=".7" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="285" y1="180" x2="734" y2="875" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5FEFF" stop-opacity=".9"/>
+      <stop offset=".45" stop-color="#DAF6FF" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#448ECB" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <use href="#star" fill="url(#blue)"/>
+  <use href="#star" fill="url(#sheen)"/>
+  <use href="#star" stroke="url(#rim)" stroke-width="3"/>
+</svg>
