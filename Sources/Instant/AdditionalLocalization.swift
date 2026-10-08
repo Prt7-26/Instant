@@ -19,6 +19,53 @@ extension L10n {
                     "id":"Sumber", "ms":"Sumber", "vi":"Nguồn", "th":"แหล่งข้อมูล", "fil":"Mga sanggunian",
                     "nl":"Bronnen", "pl":"Źródła", "sv":"Källor", "el":"Πηγές", "he":"מקורות", "sw":"Vyanzo"][language.id] ?? "Sources"
         }
+        let licenseCopy: [String: [String: String]] = [
+            "license": ["zh-Hans":"许可证", "zh-Hant":"授權條款", "ja":"ライセンス", "ko":"라이선스",
+                        "es":"Licencia", "fr":"Licence", "de":"Lizenz", "pt":"Licença", "it":"Licenza",
+                        "ru":"Лицензия", "uk":"Ліцензія", "ar":"الترخيص", "hi":"लाइसेंस", "bn":"লাইসেন্স",
+                        "ur":"لائسنس", "pa":"ਲਾਇਸੈਂਸ", "fa":"مجوز", "tr":"Lisans", "id":"Lisensi", "ms":"Lesen",
+                        "vi":"Giấy phép", "th":"ใบอนุญาต", "fil":"Lisensya", "nl":"Licentie", "pl":"Licencja",
+                        "sv":"Licens", "el":"Άδεια χρήσης", "he":"רישיון", "sw":"Leseni", "en":"License"],
+            "licenseDescription": ["zh-Hans":"禁止商业用途，可自用、修改，并在非商业范围内再分发。",
+                                   "zh-Hant":"禁止商業用途，可自行使用、修改，並在非商業範圍內再散布。",
+                                   "ja":"非営利目的に限り、使用、改変、再配布できます。",
+                                   "ko":"비상업적 목적으로만 사용, 수정 및 재배포할 수 있습니다.",
+                                   "es":"Solo para fines no comerciales; se permite usar, modificar y redistribuir.",
+                                   "fr":"Usage non commercial uniquement ; utilisation, modification et redistribution autorisées.",
+                                   "de":"Nur für nichtkommerzielle Zwecke; Nutzung, Änderung und Weitergabe sind erlaubt.",
+                                   "pt":"Somente para fins não comerciais; é permitido usar, modificar e redistribuir.",
+                                   "it":"Solo per scopi non commerciali; è possibile usare, modificare e ridistribuire.",
+                                   "ru":"Только в некоммерческих целях; разрешены использование, изменение и распространение.",
+                                   "uk":"Лише з некомерційною метою; дозволено використовувати, змінювати й поширювати.",
+                                   "ar":"للاستخدام غير التجاري فقط؛ يُسمح بالاستخدام والتعديل وإعادة التوزيع.",
+                                   "hi":"केवल गैर-व्यावसायिक उपयोग; उपयोग, संशोधन और पुनर्वितरण की अनुमति है।",
+                                   "bn":"শুধু অবাণিজ্যিক ব্যবহারের জন্য; ব্যবহার, পরিবর্তন ও পুনর্বিতরণ করা যাবে।",
+                                   "ur":"صرف غیر تجارتی استعمال؛ استعمال، ترمیم اور دوبارہ تقسیم کی اجازت ہے۔",
+                                   "pa":"ਸਿਰਫ਼ ਗੈਰ-ਵਪਾਰਕ ਵਰਤੋਂ ਲਈ; ਵਰਤਣ, ਸੋਧਣ ਅਤੇ ਮੁੜ ਵੰਡਣ ਦੀ ਇਜਾਜ਼ਤ ਹੈ।",
+                                   "fa":"فقط برای استفاده غیرتجاری؛ استفاده، تغییر و بازتوزیع مجاز است.",
+                                   "tr":"Yalnızca ticari olmayan kullanım içindir; kullanma, değiştirme ve yeniden dağıtma serbesttir.",
+                                   "id":"Hanya untuk penggunaan nonkomersial; boleh digunakan, diubah, dan didistribusikan ulang.",
+                                   "ms":"Untuk kegunaan bukan komersial sahaja; boleh digunakan, diubah suai dan diedarkan semula.",
+                                   "vi":"Chỉ dành cho mục đích phi thương mại; được phép sử dụng, sửa đổi và phân phối lại.",
+                                   "th":"สำหรับการใช้งานที่ไม่ใช่เชิงพาณิชย์เท่านั้น อนุญาตให้ใช้ แก้ไข และเผยแพร่ต่อ",
+                                   "fil":"Para lamang sa di-komersyal na paggamit; maaaring gamitin, baguhin, at muling ipamahagi.",
+                                   "nl":"Alleen voor niet-commercieel gebruik; gebruik, wijziging en herdistributie zijn toegestaan.",
+                                   "pl":"Wyłącznie do celów niekomercyjnych; można używać, modyfikować i rozpowszechniać.",
+                                   "sv":"Endast för icke-kommersiellt bruk; användning, ändring och vidare distribution tillåts.",
+                                   "el":"Μόνο για μη εμπορική χρήση· επιτρέπονται η χρήση, η τροποποίηση και η αναδιανομή.",
+                                   "he":"לשימוש לא מסחרי בלבד; מותר להשתמש, לשנות ולהפיץ מחדש.",
+                                   "sw":"Kwa matumizi yasiyo ya kibiashara pekee; matumizi, marekebisho na usambazaji upya unaruhusiwa.",
+                                   "en":"Noncommercial use only; you may use, modify, and redistribute it for noncommercial purposes."],
+            "viewLicense": ["zh-Hans":"查看许可证", "zh-Hant":"檢視授權條款", "ja":"ライセンスを表示", "ko":"라이선스 보기",
+                            "es":"Ver licencia", "fr":"Voir la licence", "de":"Lizenz anzeigen", "pt":"Ver licença",
+                            "it":"Visualizza licenza", "ru":"Открыть лицензию", "uk":"Переглянути ліцензію",
+                            "ar":"عرض الترخيص", "hi":"लाइसेंस देखें", "bn":"লাইসেন্স দেখুন", "ur":"لائسنس دیکھیں",
+                            "pa":"ਲਾਇਸੈਂਸ ਵੇਖੋ", "fa":"مشاهده مجوز", "tr":"Lisansı görüntüle", "id":"Lihat lisensi",
+                            "ms":"Lihat lesen", "vi":"Xem giấy phép", "th":"ดูใบอนุญาต", "fil":"Tingnan ang lisensya",
+                            "nl":"Licentie bekijken", "pl":"Wyświetl licencję", "sv":"Visa licens",
+                            "el":"Προβολή άδειας", "he":"הצגת הרישיון", "sw":"Tazama leseni", "en":"View license"]
+        ]
+        if let values = licenseCopy[key] { return values[language.id] ?? values["en"] }
         let keys = ["archiveNow", "manualArchiveShortcut", "archiveFolder", "chooseFolder", "defaultFolder", "openFolder", "restart", "quit"]
         guard let index = keys.firstIndex(of: key) else { return nil }
         let row: String

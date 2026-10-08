@@ -125,6 +125,17 @@ struct SettingsView: View {
                     ForEach(Language.supported) { language in Text(language.name).tag(language.id) }
                 }
             }
+            Section(words["license"]) {
+                HStack {
+                    Text("PolyForm Noncommercial 1.0.0")
+                    Spacer()
+                    Link(words["viewLicense"], destination: URL(string: "https://spdx.org/licenses/PolyForm-Noncommercial-1.0.0.html")!)
+                }
+                Text(words["licenseDescription"])
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let error = settings.error { Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled) }
         }
         .formStyle(.grouped)
