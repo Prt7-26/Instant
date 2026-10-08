@@ -12,3 +12,7 @@ Instant 是一款轻巧的 macOS 菜单栏 AI 助手。按下快捷键即可唤�
 - **自选模型**：可配置自己的模型服务，API Key 保存在 macOS 钥匙串中。
 
 适用于 macOS 26 及更新版本。首次使用时，在设置中填写服务地址、API Key 和模型即可开始。
+
+## 许可证
+
+本项目采用 PolyForm Noncommercial 1.0.0。仅限非商业用途，允许个人使用、修改和非商业再分发。完整条款见 [LICENSE](LICENSE)。
