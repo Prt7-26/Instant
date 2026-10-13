@@ -17,6 +17,10 @@ import InstantCore
     var archiveDirectory: URL { store.directory }
     private var request: Task<Void, Never>?
     private var requestID: UUID?
+    private var warmupTask: Task<Void, Never>?
+    private var warmupID: UUID?
+    private var lastConnectionUse: (configuration: ConnectionConfiguration, date: Date)?
+    private let now: () -> Date
     private var refresh: DispatchWorkItem?
     private var saveWork: DispatchWorkItem?
     private var timer: Timer?
@@ -26,15 +30,18 @@ import InstantCore
     private var replacementPrefix = ""
     private var replacementSources: [SearchSource] = []
     var isGenerating: Bool { requestID != nil }
+    var isWarmingUp: Bool { warmupID != nil }
     var connectionGuidance: String? {
         guard setupGuidanceVisible else { return nil }
         if let issue = settings.connectionIssue { return settings.l10n.connectionGuidance(issue) }
         return settings.l10n.connectionCopy[.ready]
     }
 
-    init(settings: SettingsStore, directory: URL? = nil, draft: String = "", service: ChatService = ChatService()) throws {
+    init(settings: SettingsStore, directory: URL? = nil, draft: String = "", service: ChatService = ChatService(),
+         now: @escaping () -> Date = Date.init) throws {
         self.settings = settings
         self.service = service
+        self.now = now
         self.draft = draft
         testDirectory = directory
         checkpointURL = (directory ?? SettingsStore.defaultArchiveDirectory).appendingPathComponent(".current.json")
@@ -59,8 +66,26 @@ import InstantCore
         expired = conversation.isExpired(minutes: settings.value.archiveMinutes)
         if expired && !isVisible { archiveReportingErrors() }
     }
-    func willShow() { checkExpiry(); setMode(.chat); isVisible = true }
+    func willShow() { checkExpiry(); setMode(.chat); isVisible = true; warmUpConnection() }
     func didHide() { isVisible = false; checkExpiry() }
+
+    private func warmUpConnection() {
+        guard !isGenerating, settings.connectionIssue == nil else { return }
+        let config = settings.connection
+        if let last = lastConnectionUse, last.configuration == config,
+           warmupID != nil || now().timeIntervalSince(last.date) < 30 { return }
+        warmupTask?.cancel()
+        let id = UUID()
+        warmupID = id
+        lastConnectionUse = (config, now())
+        let service = service
+        warmupTask = Task { [weak self] in
+            await service.warmUp(baseURL: config.baseURL, key: config.key, model: config.model)
+            guard let self, warmupID == id else { return }
+            warmupID = nil
+            warmupTask = nil
+        }
+    }
 
     @discardableResult func archiveNow() -> Bool {
         guard !conversation.turns.isEmpty else { return true }
@@ -131,6 +156,7 @@ import InstantCore
         requestID = id
         let turnID = last.id
         let config = settings.connection
+        lastConnectionUse = (config, now())
         let key = config.key
         let search = last.mode == .chat && ChatService.supportsSearch(baseURL: config.baseURL, model: config.model)
         var promptConversation = conversation
@@ -157,6 +183,7 @@ import InstantCore
                 conversation.turns[conversation.turns.count - 1].error = settings.l10n.modelFailureGuidance(error, hasPartialAnswer: partial)
             }
             requestID = nil
+            lastConnectionUse = (config, now())
             replacingFailedAnswer = false
             replacementPrefix = ""
             replacementSources = []
@@ -216,7 +243,13 @@ import InstantCore
         refresh?.cancel(); refresh = nil
         saveWork?.cancel(); saveWork = nil
     }
-    @discardableResult func shutdown() -> Bool { cancel(); return persist() }
+    @discardableResult func shutdown() -> Bool {
+        warmupTask?.cancel()
+        warmupTask = nil
+        warmupID = nil
+        cancel()
+        return persist()
+    }
     @discardableResult private func persist() -> Bool {
         do { try store.save(conversation); return true }
         catch { onError?(error.localizedDescription); return false }
@@ -238,5 +271,6 @@ import InstantCore
         refresh?.cancel()
         saveWork?.cancel()
         request?.cancel()
+        warmupTask?.cancel()
     }
 }

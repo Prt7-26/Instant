@@ -121,6 +121,27 @@ public final class ChatService: @unchecked Sendable {
                        onSources: @escaping @Sendable ([SearchSource]) async -> Void = { _ in },
                        onText: @escaping @Sendable (String) async -> Void) async throws {
         let config = ConnectionConfiguration(baseURL: baseURL, key: key, model: model)
+        let request = try Self.request(config: config, messages: messages, webSearch: webSearch, forceSearch: forceSearch)
+        try Task.checkCancellation()
+        let (bytes, response) = try await session.bytes(for: request)
+        try await consume(bytes, response: response, onSources: onSources, onText: onText)
+    }
+
+    /// Finish a tiny response on the chat session so its connection can be reused.
+    /// This request has no conversation context, callbacks or user-facing errors.
+    public func warmUp(baseURL: String, key: String, model: String) async {
+        let config = ConnectionConfiguration(baseURL: baseURL, key: key, model: model)
+        guard !Task.isCancelled,
+              let request = try? Self.request(config: config, messages: [ChatMessage(role: "user", content: ".")],
+                                              webSearch: Self.supportsSearch(baseURL: config.baseURL, model: config.model),
+                                              warmingUp: true) else { return }
+        // Consume the full response rather than cancelling at the first byte,
+        // which can close an HTTP/1.1 connection before it enters the pool.
+        _ = try? await session.data(for: request)
+    }
+
+    private static func request(config: ConnectionConfiguration, messages: [ChatMessage],
+                                webSearch: Bool, forceSearch: Bool = false, warmingUp: Bool = false) throws -> URLRequest {
         if let issue = config.issue { throw ChatError.configuration(issue) }
         let key = config.key, model = config.model, baseURL = config.baseURL
         let endpoint = try webSearch ? Self.searchEndpoint(baseURL: baseURL, model: model) : Self.endpoint(for: baseURL)
@@ -128,12 +149,13 @@ public final class ChatService: @unchecked Sendable {
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        var body: [String: Any] = ["model": model, "stream": true,
+        request.setValue(warmingUp ? "application/json" : "text/event-stream", forHTTPHeaderField: "Accept")
+        var body: [String: Any] = ["model": model, "stream": !warmingUp,
                                    "messages": messages.map { ["role": $0.role, "content": $0.content] }]
         if model.lowercased().hasPrefix("qwen") { body["enable_thinking"] = false }
+        if warmingUp { body["max_tokens"] = 1 }
         if webSearch {
-            request.setValue("enable", forHTTPHeaderField: "X-DashScope-SSE")
+            if !warmingUp { request.setValue("enable", forHTTPHeaderField: "X-DashScope-SSE") }
             let multimodal = endpoint.path.contains("multimodal-generation")
             let input: [[String: Any]] = messages.map {
                 ["role": $0.role, "content": multimodal ? [["text": $0.content]] as Any : $0.content as Any]
@@ -145,10 +167,19 @@ public final class ChatService: @unchecked Sendable {
                     "prepend_search_result": true, "forced_search": forceSearch
                 ]
             ]]
+            if warmingUp {
+                body["parameters"] = ["enable_search": false, "enable_thinking": false,
+                                      "result_format": "message", "max_tokens": 1]
+            }
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        try Task.checkCancellation()
-        let (bytes, response) = try await session.bytes(for: request)
+        if warmingUp { request.timeoutInterval = 8 }
+        return request
+    }
+
+    private func consume(_ bytes: URLSession.AsyncBytes, response: URLResponse,
+                         onSources: @escaping @Sendable ([SearchSource]) async -> Void,
+                         onText: @escaping @Sendable (String) async -> Void) async throws {
         guard let response = response as? HTTPURLResponse else { throw ChatError.invalidResponse }
         guard (200..<300).contains(response.statusCode) else {
             if let failure = await Self.diagnosticFailure(from: bytes), failure != .unknown,

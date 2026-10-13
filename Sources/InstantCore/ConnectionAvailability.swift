@@ -9,7 +9,7 @@ public enum ConnectionIssue: Equatable {
     case invalidURL, invalidKey, invalidModel, keychainUnavailable
 }
 
-public struct ConnectionConfiguration {
+public struct ConnectionConfiguration: Equatable {
     public let baseURL: String
     public let key: String
     public let model: String
