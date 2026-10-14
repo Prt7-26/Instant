@@ -1,6 +1,27 @@
 import Foundation
 import CoreGraphics
 
+public struct PanelDisplay {
+    public let frame: CGRect
+    public let visibleFrame: CGRect
+    public let scale: CGFloat
+
+    public init(frame: CGRect, visibleFrame: CGRect, scale: CGFloat) {
+        self.frame = frame
+        self.visibleFrame = visibleFrame
+        self.scale = scale
+    }
+
+    public static func select(at point: CGPoint, from displays: [Self], fallback: Self?) -> Self? {
+        displays.first { $0.frame.contains(point) } ?? fallback ?? displays.first
+    }
+
+    public func shouldDismiss(isVisible: Bool, isDismissing: Bool, isOnActiveSpace: Bool,
+                              currentFrame: CGRect) -> Bool {
+        isVisible && !isDismissing && isOnActiveSpace && currentFrame == frame
+    }
+}
+
 public enum PanelGeometry {
     /// Transparent room for the spring and the glass edge, equal on every side.
     public static let margin: CGFloat = 24

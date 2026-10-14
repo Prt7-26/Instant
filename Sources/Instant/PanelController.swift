@@ -3,9 +3,9 @@ import QuartzCore
 import InstantCore
 import MaterialView
 
-final class FloatingPanel: NSWindow {
+final class FloatingPanel: NSPanel {
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
+    override var canBecomeMain: Bool { false }
 }
 
 /// Retargetable: each new transition starts at the currently visible geometry.
@@ -111,12 +111,13 @@ final class Motion: NSObject {
         self.settings = settings
         self.conversation = conversation
         panel = FloatingPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 68),
-                              styleMask: [.borderless], backing: .buffered, defer: false)
+                              styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+        panel.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary, .transient, .ignoresCycle]
+        panel.becomesKeyOnlyIfNeeded = false
         panel.hidesOnDeactivate = false
         panel.isMovable = false
         panel.acceptsMouseMovedEvents = true
@@ -205,14 +206,30 @@ final class Motion: NSObject {
         refresh(follow: true)
     }
     required init?(coder: NSCoder) { fatalError() }
+    private var invocationDisplay: PanelDisplay? {
+        func display(_ screen: NSScreen) -> PanelDisplay {
+            PanelDisplay(frame: screen.frame, visibleFrame: screen.visibleFrame, scale: screen.backingScaleFactor)
+        }
+        // AppKit mouse and screen coordinates share a bottom-left origin,
+        // including negative coordinates for screens left of or below the main one.
+        return PanelDisplay.select(at: NSEvent.mouseLocation, from: NSScreen.screens.map(display),
+                                   fallback: NSScreen.main.map(display))
+    }
     func toggle() {
-        if panel.isVisible && !dismissing { dismiss(restoreFocus: true) }
-        else { present() }
+        guard let display = invocationDisplay else { return }
+        if display.shouldDismiss(isVisible: panel.isVisible, isDismissing: dismissing,
+                                 isOnActiveSpace: panel.isOnActiveSpace, currentFrame: screenFrame) {
+            dismiss(restoreFocus: true)
+        } else { present(on: display) }
     }
     func present() {
+        guard let display = invocationDisplay else { return }
+        present(on: display)
+    }
+    func present(on display: PanelDisplay) {
         let wasVisible = panel.isVisible
-        guard !wasVisible || dismissing else {
-            NSApp.activate(ignoringOtherApps: true)
+        let displayChanged = screenFrame != display.frame || backingScale != display.scale
+        guard !wasVisible || dismissing || displayChanged || !panel.isOnActiveSpace else {
             panel.makeKeyAndOrderFront(nil)
             panel.makeFirstResponder(composer.editor)
             return
@@ -221,14 +238,17 @@ final class Motion: NSObject {
         heightMotion.stop()
         preparingPresentation = true
         dismissing = false
-        if !wasVisible {
+        if !wasVisible || displayChanged || !panel.isOnActiveSpace {
+            // Re-order on the destination's active Space instead of retaining
+            // the previous display's window placement or application activation.
+            panel.orderOut(nil)
+            transcript.sourcePopover.close()
             transcript.prepareForPresentation()
             if let app = NSWorkspace.shared.frontmostApplication,
                app.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = app }
-            let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main!
-            let visible = screen.visibleFrame
-            screenFrame = screen.frame
-            backingScale = screen.backingScaleFactor
+            let visible = display.visibleFrame
+            screenFrame = display.frame
+            backingScale = display.scale
             anchorTop = ((visible.maxY - visible.height * 0.22) * backingScale).rounded() / backingScale
             maxHeight = min(600, visible.height * 0.6)
             contentWidth = min(680, visible.width - 64 - PanelGeometry.margin * 2)
@@ -241,7 +261,6 @@ final class Motion: NSObject {
         preparingPresentation = false
         let from = visualState
         applyVisualState()
-        NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(composer.editor)
         beginTrace("show")

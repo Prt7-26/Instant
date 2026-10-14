@@ -14,10 +14,9 @@ import InstantCore
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !ProcessInfo.processInfo.arguments.contains("--ui-test"),
-           let existing = NSRunningApplication.runningApplications(withBundleIdentifier: "com.instant.app").first(where: {
+           NSRunningApplication.runningApplications(withBundleIdentifier: "com.instant.app").contains(where: {
                $0.processIdentifier != ProcessInfo.processInfo.processIdentifier && !$0.isTerminated && kill($0.processIdentifier, 0) == 0
            }) {
-            existing.activate(options: [])
             DistributedNotificationCenter.default().postNotificationName(.init("com.instant.app.show"), object: nil, userInfo: nil, deliverImmediately: true)
             NSApp.terminate(nil)
             return
